@@ -1,0 +1,52 @@
+---
+title: "Time Series 3.2 Time series conponents"
+author: "Yuzhou Peng"
+date: "2023-09-15"
+output: html_document
+---
+
+```{r}
+library(fpp3)
+```
+The additive decomposition is the most appropriate if the magnitude of the seasonal fluctuations, or the variation around the trend-cycle, does not vary with the level of the time series. When the variation in the seasonal pattern, or the variation around the trend-cycle, appears to be proportional to the level of the time series, then a multiplicative decomposition is more appropriate. Multiplicative decompositions are common with economic time series.
+```{r}
+data("us_employment")
+us_retail_employment <- us_employment %>%
+  filter(year(Month) >= 1990, Title == "Retail Trade") %>%
+  select(-Series_ID) 
+
+us_retail_employment %>%
+  autoplot(Employed) +
+  labs(y = "Persons (k)",
+       title = "Total employment in us retail")
+```
+
+To illustrate the ideas, we will use the STL decomposition method, which is discussed in Section 3.6.
+```{r}
+dcmp <- us_retail_employment %>%
+  model(stl = STL(Employed))
+components(dcmp)
+
+as_tsibble(components(dcmp)) %>%
+  autoplot(Employed, colour = "gray") +
+  geom_line(aes(y = trend), colour = "#D55E00") +
+  labs(
+    y = "Persons (thousands)",
+    title = "Total employment in US retail"
+  )
+
+components(dcmp) |> autoplot()
+```
+
+##Seasonally adjusted data
+If the seasonal component is removed from the original data, the resulting values are the “seasonally adjusted” data.
+```{r}
+components(dcmp) %>%
+  as_tsibble() %>%
+  autoplot(Employed, colour = "gray") +
+  geom_line(aes(y = season_adjust), colour = "blue") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+```
+
+

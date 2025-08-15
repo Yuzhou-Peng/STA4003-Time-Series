@@ -1,0 +1,24 @@
+---
+title: "STA4003_HW5_codes"
+author: "Yuzhou Peng"
+date: "2023-12-06"
+output: html_document
+---
+
+```{r}
+library(tswge)
+```
+
+```{r}
+set.seed(123)
+
+x <- list()
+
+for(i in 1:10){
+  x[[i]] <- gen.arima.wge(200, phi=0.9, theta=0.5, d=0,s=0,mu=0,vara=1,plot=F,sn=0)
+  print(arima(x[[i]], order = c(1,0,1), method = "CSS-ML"))
+  print(arima(x[[i]], order = c(1,0,1), method = "ML"))
+  print(arima(x[[i]], order = c(1,0,1), method = "CSS"))
+  cat("-----------------------------------------------------------------------------\n")
+}
+```

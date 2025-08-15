@@ -1,0 +1,160 @@
+---
+title: "STA4003_HW1"
+author: "Yuzhou Peng"
+date: "2023-09-26"
+output: html_document
+---
+
+```{r}
+library(fpp3)
+```
+##2.10.4
+The **USgas** package contains data on the demand for natural gas in the US.
+
+a.Install the **USgas** package.
+```{r}
+library(USgas)
+```
+
+b.Create a tsibble from **us_total**with year as the index and state as the key.
+```{r}
+data(us_total)
+us_total_tsibble <- us_total %>%
+  as_tsibble(index = year,
+             key = state)
+```
+
+c.Plot the annual natural gas consumption by state for the New England area (comprising the states of Maine, Vermont, New Hampshire, Massachusetts, Connecticut and Rhode Island).
+```{r}
+us_total_by_state <- us_total_tsibble %>%
+  group_by(state) %>%
+  summarise(consumption = sum(y))
+
+us_total_by_state %>%
+  filter(state %in% c("Maine", "Vermont", "New Hampshire", "Massachusetts", "Connecticut", "Rhode Island")) %>%
+  autoplot() +
+  labs(title = "Natural Gas Consumption by State for the New England Area")
+```
+
+##2.10.7
+Monthly Australian retail data is provided in **aus_retail**. Select one of the time series as follows (but choose your own seed value):
+```{r}
+data("aus_retail")
+set.seed(123)
+myseries <- aus_retail |>
+  filter(`Series ID` == sample(aus_retail$`Series ID`,1))
+
+myseries %>% autoplot()
+myseries %>% gg_season()
+myseries %>% gg_subseries()
+myseries %>% gg_lag()
+
+myseries %>% 
+  ACF(,Turnover) %>% 
+  autoplot()
+```
+Observe lag, subseries and ACF plots, there is significant trend and cyclicity.
+Observe seasonal plot, there is seasonality in the timw series.
+
+##2.10.9
+The following time plots and ACF plots correspond to four different time series. Your task is to match each time plot in the first row with one of the ACF plots in the second row.
+
+1. B
+2. A
+3. D
+4. C
+
+
+##2.10.10
+The **aus_livestock** data contains the monthly total number of pigs slaughtered in Victoria, Australia, from Jul 1972 to Dec 2018. Use **filter()** to extract pig slaughters in Victoria between 1990 and 1995. Use **autoplot()** and **ACF()** for this data. How do they differ from white noise? If a longer period of data is used, what difference does it make to the ACF?
+```{r}
+data("aus_livestock") 
+pig_slaughtered <- aus_livestock %>%
+  filter(year(Month) >= 1990 & year(Month) <= 1995)  %>%
+  filter(Animal == "Pigs") %>%
+  filter(State == "Victoria") 
+
+autoplot(pig_slaughtered, Count)
+ACF(pig_slaughtered, Count)
+autoplot(ACF(pig_slaughtered, Count))
+
+aus_livestock %>%
+  filter(Animal == "Pigs") %>%
+  filter(State == "Victoria") %>%
+  ACF(Count) %>%
+  autoplot()
+```
+The autoplot shows significant trend in the time series and from ACF,we observe that autocorrelation coefficient within lag 15 are all larger than the threshold while those of white noise are likely to be within the threshold.
+If a longer period data is used, the autocorrelation coefficients tend to be larger.
+
+
+##2.10.11
+a.Use the following code to compute the daily changes in Google closing stock prices.
+```{r}
+dgoog <- gafa_stock |>
+  filter(Symbol == "GOOG", year(Date) >= 2018) |>
+  mutate(trading_day = row_number()) |>
+  update_tsibble(index = trading_day, regular = TRUE) |>
+  mutate(diff = difference(Close))
+```
+
+b. Why was it necessary to re-index the tsibble?
+Observe the data, we discover that there are small gaps in **Date**, i.e. there are days that are not trading. To better study data on trading days, we re-index the data.
+
+c.Plot these differences and their ACF.
+```{r}
+dgoog %>%
+  autoplot(diff) +
+  labs(y = "Difference", title = " Daily Changes in Google Closing Stock Prices")
+
+dgoog %>% 
+  ACF(diff) %>%
+  autoplot +
+  labs(title = "ACF of Daily Changes in Google Closing Stock Prices")
+```
+d.Do the changes in the stock prices look like white noise?
+According to the ACF plot, most of autocorrelation coefficients are within the threshold (except lag = 8), behaving similarly as white noise.
+
+##3.7.10
+This exercise uses the **canadian_gas** data (monthly Canadian gas production in billions of cubic metres, January 1960 – February 2005).
+
+a.Plot the data using **autoplot()**, **gg_subseries()** and **gg_season()** to look at the effect of the changing seasonality over time.
+```{r}
+data("canadian_gas")
+canadian_gas %>%
+  autoplot() +
+  labs(title = "Monthly Canadian Gas Production", y = "Production (billion cubic metres)")
+
+canadian_gas %>%
+  gg_season() +
+  labs(title = "Monthly Canadian Gas Production", y = "Production (billion cubic metres)")
+
+canadian_gas %>%
+  gg_subseries() +
+  labs(title = "Monthly Canadian Gas Production", y = "Production (billion cubic metres)")
+```
+b.Do an STL decomposition of the data. You will need to choose a seasonal window to allow for the changing shape of the seasonal component.
+```{r}
+canadian_gas_stl <- canadian_gas %>% 
+  model(
+    STL(Volume ~ trend(window = 10) +
+          season(window = "periodic"),
+        robust = T)) %>%
+  components() 
+
+canadian_gas_stl %>%
+  autoplot()
+```
+c.How does the seasonal shape change over time? [Hint: Try plotting the seasonal component using **gg_season()**.]
+```{r}
+canadian_gas_stl %>%
+  gg_season(season_year)
+```
+According to the seasonal plot of seasonal component, we observe a decrease from January to June but with March being a local maximum. The trend is followed by a temporary climb-ups in July and August and drop in September. The data in the last quarter of a year experience steep increase and finally reach the level of January.
+
+d.Can you produce a plausible seasonally adjusted series?
+```{r}
+canadian_gas_stl %>%
+  autoplot(season_adjust) +
+  labs(title = "Plausible Seasonally Adjusted Series")
+```

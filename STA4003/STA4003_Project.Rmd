@@ -1,0 +1,773 @@
+---
+title: "STA4003_Project"
+author: "Yuzhou Peng"
+date: "2023-12-01"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(fpp3)
+library(ggplot2)
+library(MASS)
+library(vars)
+```
+
+
+1. Data preprocessing
+(1) Combine the data from 2014 to 2017 in **Train_all**
+(2) Extract data of 1st, 2nd, 3rd .......11th race of the racing days
+```{r}
+load("data2014.RData")
+load("data2015.RData")
+load("data2016.RData")
+load("data2017.RData")
+load("data2018.RData")
+
+Train1 <- data2014
+Train2 <- data2015
+Train3 <- data2016
+Train4 <- data2017
+Test1 <- data2018
+
+#data from 2014 to 2017
+Train_all <- rbind(Train1, Train2, Train3, Train4)
+
+train_all_Csum <- Train_all %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x)
+
+#data in 2018
+test_Csum <- Test1 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x)
+
+#data from 2014 to 2018
+data_all <- rbind(Train_all, Test1)
+
+data_all_Csum <- data_all %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x)
+
+#----------------------------------------------
+
+#Extract the i-th race on each day
+
+#1.
+data_all_1 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 1) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_1 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 1) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_1 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 1) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#2.
+data_all_2 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 2) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_2 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 2) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_2 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 2) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#3.
+data_all_3 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 3) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_3 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 3) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_3 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 3) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#4.
+data_all_4 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 4) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_4 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 4) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_4 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 4) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#5.
+data_all_5 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 5) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_5 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 5) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_5 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 5) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#6.
+data_all_6 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 6) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_6 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 6) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_6 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 6) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#7.
+data_all_7 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 7) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_7 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 7) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_7 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 7) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#8.
+data_all_8 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 8) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_8 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 8) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_8 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 8) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#9.
+data_all_9 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 9) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_9 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 9) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_9 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 9) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#10.
+data_all_10 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 10) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_10 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 10) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_10 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 10) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+#11.
+data_all_11 <- data_all_Csum %>%
+  filter(WIN_NUMBER.y == 11) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+test_11 <- test_Csum %>%
+  filter(WIN_NUMBER.y == 11) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+train_all_11 <- train_all_Csum %>%
+  filter(WIN_NUMBER.y == 11) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+```
+
+2. Model fitting and prediction
+
+The model includes 2 models: 
+(1) a linear model with **Csum** , **WIN_POOL.x** being the response variable (y) and explanatory variable (x).
+(2) a vector autoregression (**VAR**) model
+For data of i-th race, we fit the model as follow.
+
+Step 1: Fit a **TSLM** model to the first 37.5% days (rounded by **floor()**) of the i-th races and predict the first 30 days data in the test set. If the test set have fewer days then 30, predict all data using this model.
+
+Step 2: Fit a vector autoregression model to the first j (j > 30) days in test set and predict data on day j+1. And thus iteratively generate all prediction of data after 30th day.
+
+(3) The result is stored in **result_i** for i-th race. **result_all** is the combined set of all **result_i**, containing **true_value**, **forecast_value**, **upper_quantile** (0.95 quantile) and **APE** (absolute percentatage error). 
+
+```{r}
+#1st race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_1 <- train_all_1 %>%
+  filter(time_index <= floor(nrow(train_all_1) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_1 <- tslm_pool_1 %>%
+  predict(new_data = test_1 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_1_lm <- fc_tslm_pool_1$Csum %>% quantile(0.95)
+
+tslm_1_forecast <- cbind(fc_tslm_pool_1$.mean, q_0.95_1_lm)
+
+colnames(tslm_1_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_1 <- ts(cbind(test_1$WIN_POOL.x, test_1$Csum))
+
+var_1_forecast = data.frame()
+
+for (i in 30:(nrow(ts_1) - 1)){
+  var_pool <- ts_1[1:i,] %>%
+    vars::VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_1_forecast <- rbind(var_1_forecast, fc_var_result)
+    
+}
+
+names(var_1_forecast) <- c("forecast", "upper_quantile")
+
+forecast_1 <- rbind(tslm_1_forecast, var_1_forecast)
+
+result_1 <- data.frame(true_value = test_1$Csum,
+                       forecast_value = forecast_1$forecast,
+                       upper_quantile = forecast_1$upper_quantile, 
+                       APE = abs((forecast_1$forecast - test_1$Csum)/test_1$Csum))
+
+```
+
+
+```{r}
+# 2nd race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_2 <- train_all_2 %>%
+  filter(time_index <= floor(nrow(train_all_2) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_2 <- tslm_pool_2 %>%
+  predict(new_data = test_2 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_2_lm <- fc_tslm_pool_2$Csum %>% quantile(0.95)
+
+tslm_2_forecast <- cbind(fc_tslm_pool_2$.mean, q_0.95_2_lm)
+
+colnames(tslm_2_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_2 <- ts(cbind(test_2$WIN_POOL.x, test_2$Csum))
+
+var_2_forecast = data.frame()
+
+for (i in 30:(nrow(ts_2) - 1)){
+  var_pool <- ts_2[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_2_forecast <- rbind(var_2_forecast, fc_var_result)
+    
+}
+
+names(var_2_forecast) <- c("forecast", "upper_quantile")
+
+forecast_2 <- rbind(tslm_2_forecast, var_2_forecast)
+
+result_2 <- data.frame(true_value = test_2$Csum,
+                       forecast_value = forecast_2$forecast,
+                       upper_quantile = forecast_2$upper_quantile, 
+                       APE = abs((forecast_2$forecast - test_2$Csum)/test_2$Csum))
+
+```
+
+```{r}
+# 3rd race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_3 <- train_all_3 %>%
+  filter(time_index <= floor(nrow(train_all_3) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_3 <- tslm_pool_3 %>%
+  predict(new_data = test_3 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_3_lm <- fc_tslm_pool_3$Csum %>% quantile(0.95)
+
+tslm_3_forecast <- cbind(fc_tslm_pool_3$.mean, q_0.95_3_lm)
+
+colnames(tslm_3_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_3 <- ts(cbind(test_3$WIN_POOL.x, test_3$Csum))
+
+var_3_forecast = data.frame()
+
+for (i in 30:(nrow(ts_3) - 1)){
+  var_pool <- ts_3[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_3_forecast <- rbind(var_3_forecast, fc_var_result)
+    
+}
+
+names(var_3_forecast) <- c("forecast", "upper_quantile")
+
+forecast_3 <- rbind(tslm_3_forecast, var_3_forecast)
+
+result_3 <- data.frame(true_value = test_3$Csum,
+                       forecast_value = forecast_3$forecast,
+                       upper_quantile = forecast_3$upper_quantile, 
+                       APE = abs((forecast_3$forecast - test_3$Csum)/test_3$Csum))
+```
+
+```{r}
+# 4st race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_4 <- train_all_4 %>%
+  filter(time_index <= floor(nrow(train_all_4) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_4 <- tslm_pool_4 %>%
+  predict(new_data = test_4 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_4_lm <- fc_tslm_pool_4$Csum %>% quantile(0.95)
+
+tslm_4_forecast <- cbind(fc_tslm_pool_4$.mean, q_0.95_4_lm)
+
+colnames(tslm_4_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_4 <- ts(cbind(test_4$WIN_POOL.x, test_4$Csum))
+
+var_4_forecast = data.frame()
+
+for (i in 30:(nrow(ts_4) - 1)){
+  var_pool <- ts_4[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_4_forecast <- rbind(var_4_forecast, fc_var_result)
+    
+}
+
+names(var_4_forecast) <- c("forecast", "upper_quantile")
+
+forecast_4 <- rbind(tslm_4_forecast, var_4_forecast)
+
+result_4 <- data.frame(true_value = test_4$Csum,
+                       forecast_value = forecast_4$forecast,
+                       upper_quantile = forecast_4$upper_quantile, 
+                       APE = abs((forecast_4$forecast - test_4$Csum)/test_4$Csum))
+```
+
+```{r}
+# 5th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_5 <- train_all_5 %>%
+  filter(time_index <= floor(nrow(train_all_5) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_5<- tslm_pool_5 %>%
+  predict(new_data = test_5 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_5_lm <- fc_tslm_pool_5$Csum %>% quantile(0.95)
+
+tslm_5_forecast <- cbind(fc_tslm_pool_5$.mean, q_0.95_5_lm)
+
+colnames(tslm_5_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_5 <- ts(cbind(test_5$WIN_POOL.x, test_5$Csum))
+
+var_5_forecast = data.frame()
+
+for (i in 30:(nrow(ts_5) - 1)){
+  var_pool <- ts_5[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_5_forecast <- rbind(var_5_forecast, fc_var_result)
+    
+}
+
+names(var_5_forecast) <- c("forecast", "upper_quantile")
+
+forecast_5 <- rbind(tslm_5_forecast, var_5_forecast)
+
+result_5 <- data.frame(true_value = test_5$Csum,
+                       forecast_value = forecast_5$forecast,
+                       upper_quantile = forecast_5$upper_quantile, 
+                       APE = abs((forecast_5$forecast - test_5$Csum)/test_5$Csum))
+```
+
+```{r}
+# 6th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_6 <- train_all_6 %>%
+  filter(time_index <= floor(nrow(train_all_6) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_6 <- tslm_pool_6 %>%
+  predict(new_data = test_6 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_6_lm <- fc_tslm_pool_6$Csum %>% quantile(0.95)
+
+tslm_6_forecast <- cbind(fc_tslm_pool_6$.mean, q_0.95_6_lm)
+
+colnames(tslm_6_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_6 <- ts(cbind(test_6$WIN_POOL.x, test_6$Csum))
+
+var_6_forecast = data.frame()
+
+for (i in 30:(nrow(ts_6) - 1)){
+  var_pool <- ts_6[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_6_forecast <- rbind(var_6_forecast, fc_var_result)
+    
+}
+
+names(var_6_forecast) <- c("forecast", "upper_quantile")
+
+forecast_6 <- rbind(tslm_6_forecast, var_6_forecast)
+
+result_6 <- data.frame(true_value = test_6$Csum,
+                       forecast_value = forecast_6$forecast,
+                       upper_quantile = forecast_6$upper_quantile, 
+                       APE = abs((forecast_6$forecast - test_6$Csum)/test_6$Csum))
+```
+
+```{r}
+# 7th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_7 <- train_all_7 %>%
+  filter(time_index <= floor(nrow(train_all_7) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_7 <- tslm_pool_7 %>%
+  predict(new_data = test_7 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_7_lm <- fc_tslm_pool_7$Csum %>% quantile(0.95)
+
+tslm_7_forecast <- cbind(fc_tslm_pool_7$.mean, q_0.95_7_lm)
+
+colnames(tslm_7_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_7 <- ts(cbind(test_7$WIN_POOL.x, test_7$Csum))
+
+var_7_forecast = data.frame()
+
+for (i in 30:(nrow(ts_7) - 1)){
+  var_pool <- ts_7[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_7_forecast <- rbind(var_7_forecast, fc_var_result)
+    
+}
+
+names(var_7_forecast) <- c("forecast", "upper_quantile")
+
+forecast_7 <- rbind(tslm_7_forecast, var_7_forecast)
+
+result_7 <- data.frame(true_value = test_7$Csum,
+                       forecast_value = forecast_7$forecast,
+                       upper_quantile = forecast_7$upper_quantile, 
+                       APE = abs((forecast_7$forecast - test_7$Csum)/test_7$Csum))
+```
+
+```{r}
+# 8th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_8 <- train_all_8 %>%
+  filter(time_index <= floor(nrow(train_all_8) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_8 <- tslm_pool_8 %>%
+  predict(new_data = test_8 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_8_lm <- fc_tslm_pool_8$Csum %>% quantile(0.95)
+
+tslm_8_forecast <- cbind(fc_tslm_pool_8$.mean, q_0.95_8_lm)
+
+colnames(tslm_8_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_8 <- ts(cbind(test_8$WIN_POOL.x, test_8$Csum))
+
+var_8_forecast = data.frame()
+
+for (i in 30:(nrow(ts_8) - 1)){
+  var_pool <- ts_8[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_8_forecast <- rbind(var_8_forecast, fc_var_result)
+    
+}
+
+names(var_8_forecast) <- c("forecast", "upper_quantile")
+
+forecast_8 <- rbind(tslm_8_forecast, var_8_forecast)
+
+result_8 <- data.frame(true_value = test_8$Csum,
+                       forecast_value = forecast_8$forecast,
+                       upper_quantile = forecast_8$upper_quantile, 
+                       APE = abs((forecast_8$forecast - test_8$Csum)/test_8$Csum))
+```
+
+```{r}
+# 9th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_9 <- train_all_9 %>%
+  filter(time_index <= floor(nrow(train_all_9) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_9 <- tslm_pool_9 %>%
+  predict(new_data = test_9 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_9_lm <- fc_tslm_pool_9$Csum %>% quantile(0.95)
+
+tslm_9_forecast <- cbind(fc_tslm_pool_9$.mean, q_0.95_9_lm)
+
+colnames(tslm_9_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_9 <- ts(cbind(test_9$WIN_POOL.x, test_9$Csum))
+
+var_9_forecast = data.frame()
+
+for (i in 30:(nrow(ts_9) - 1)){
+  var_pool <- ts_9[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_9_forecast <- rbind(var_9_forecast, fc_var_result)
+    
+}
+
+names(var_9_forecast) <- c("forecast", "upper_quantile")
+
+forecast_9 <- rbind(tslm_9_forecast, var_9_forecast)
+
+result_9 <- data.frame(true_value = test_9$Csum,
+                       forecast_value = forecast_9$forecast,
+                       upper_quantile = forecast_9$upper_quantile, 
+                       APE = abs((forecast_9$forecast - test_9$Csum)/test_9$Csum))
+```
+
+```{r}
+# 10th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_10 <- train_all_10 %>%
+  filter(time_index <= floor(nrow(train_all_10) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_10 <- tslm_pool_10 %>%
+  predict(new_data = test_10 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_10_lm <- fc_tslm_pool_10$Csum %>% quantile(0.95)
+
+tslm_10_forecast <- cbind(fc_tslm_pool_10$.mean, q_0.95_10_lm)
+
+colnames(tslm_10_forecast) <- c("forecast", "upper_quantile")
+
+#Fit the rest data using VAR model
+
+ts_10 <- ts(cbind(test_10$WIN_POOL.x, test_10$Csum))
+
+var_10_forecast = data.frame()
+
+for (i in 30:(nrow(ts_10) - 1)){
+  var_pool <- ts_10[1:i,] %>%
+    VAR() %>%
+    predict(n.ahead = 1, ci = 0.9)
+  
+  var_fc <- var_pool$fcst[[2]] %>%
+    as.data.frame()
+  
+  fc_var_result <- cbind(var_fc$fcst, var_fc$upper)
+  
+  var_10_forecast <- rbind(var_10_forecast, fc_var_result)
+    
+}
+
+names(var_10_forecast) <- c("forecast", "upper_quantile")
+
+forecast_10 <- rbind(tslm_10_forecast, var_10_forecast)
+
+result_10 <- data.frame(true_value = test_10$Csum,
+                       forecast_value = forecast_10$forecast,
+                       upper_quantile = forecast_10$upper_quantile, 
+                       APE = abs((forecast_10$forecast - test_10$Csum)/test_10$Csum))
+```
+
+```{r}
+# 11th race
+#Fit a linear regression to Csum ~ WIN_POOL.x
+
+tslm_pool_11 <- train_all_11 %>%
+  filter(time_index <= floor(nrow(train_all_11) * 0.375)) %>%
+  model(TSLM(Csum ~ WIN_POOL.x)) 
+
+fc_tslm_pool_11 <- tslm_pool_11 %>%
+  predict(new_data = test_11 %>% filter(time_index <= 30), interval = "prediction")
+
+
+q_0.95_11_lm <- fc_tslm_pool_11$Csum %>% quantile(0.95)
+
+tslm_11_forecast <- cbind(fc_tslm_pool_11$.mean, q_0.95_11_lm)
+
+colnames(tslm_11_forecast) <- c("forecast", "upper_quantile")
+
+forecast_11 <- tslm_11_forecast %>% as.data.frame()
+
+result_11 <- data.frame(true_value = test_11$Csum,
+                       forecast_value = forecast_11$forecast,
+                       upper_quantile = forecast_11$upper_quantile, 
+                       APE = abs((forecast_11$forecast - test_11$Csum)/test_11$Csum))
+```
+3. Prediction results 
+(1) MAPE is calculated by the mean value of **result_all$APE**.
+(2) 0.95-quantile score is stored in **QS**.
+
+```{r}
+result_all = rbind(result_1, result_2, result_3, result_4, result_5, result_6, result_7, result_8, result_9, result_10, result_11)
+
+MAPE <- mean(result_all$APE)
+
+qs_0.95 = data.frame()
+
+for (i in 1:nrow(result_all)){
+  qs = quantile_score(result_all$upper_quantile[i], result_all$true_value[i], 0.95)
+  qs_0.95 = rbind(qs_0.95, qs)
+}
+
+names(qs_0.95)[1] <- "QS"
+
+QS <- mean(qs_0.95$QS)
+
+MAPE
+QS
+```

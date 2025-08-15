@@ -1,0 +1,280 @@
+---
+title: "Time Series 5 Forecaster's Tool"
+author: "Yuzhou Peng"
+date: "2023-09-30"
+output: html_document
+---
+## 5.2 Some simple forecasting methods
+
+## Example: Australian quarterly beer production
+Figure shows the first three methods applied to Australian quarterly beer production from 1992 to 2006, with the forecasts compared against actual values in the next 3.5 years.
+```{r}
+library(fpp3)
+data("aus_production")
+
+#set training data
+train <- aus_production %>%
+  filter_index("1992 Q1" ~ "2006 Q4")
+
+#fit the model
+beer_fit <- train %>%
+  model(
+    mean = MEAN(Beer),
+    naive = NAIVE(Beer),
+    snaive = SNAIVE(Beer)
+  )
+
+#Generate forecasts for 14 quarters
+beer_forecast <- beer_fit %>%
+  forecast(h = 14)
+
+beer_forecast %>%
+  autoplot(train, level = NULL) +
+  autolayer(
+    filter_index(aus_production, "2007 Q1" ~ .),
+    colour = "black"
+  ) +
+  labs(
+    y = "Magalitres",
+    title = "Forecasts for quarterly beer production"
+  ) +
+  guides(colour = guide_legend(title = "Forecast"))
+```
+
+## Example: Google’s daily closing stock price
+In Figure 5.8, the non-seasonal methods are applied to Google’s daily closing stock price in 2015, and used to forecast one month ahead. Because stock prices are not observed every day, we first set up a new time index based on the trading days rather than calendar days.
+```{r}
+# Re-index based on trading days
+data("gafa_stock")
+google_stock <- gafa_stock %>%
+  filter(Symbol == "GOOG", year(Date) >= 2015) %>%
+  mutate(day = row_number()) %>%
+  update_tsibble(index = day, regular = T)
+
+#Filter the year of interest
+google_2015 <- google_stock %>%
+  filter(year(Date) == 2015)
+
+#Fit the model
+google_fit <- google_2015 %>%
+  model(
+    mean = MEAN(Close),
+    naive = NAIVE(Close),
+    Drift = NAIVE(Close ~ drift())
+  )
+
+#Produce forecast for 2016 Jan
+google_2016_jan <- google_stock %>%
+  filter(yearmonth(Date) == yearmonth("2016 Jan"))
+google_forecast <- google_fit %>%
+  forecast(new_data = google_2016_jan)
+
+#Plot the forecasts
+google_forecast %>%
+  autoplot(google_2015, level = NULL) +
+  autolayer(google_2016_jan, Close, colour = "black")+
+  labs(
+    y = "USD",
+    title = "Google daily closing stocking prices",
+    subtitle = "(Jan 2015 - Jan 2016)"
+  ) +
+  guides(colour = guide_legend(title = "Forecast"))
+
+```
+
+## 5.3 Fitted values and residuals
+
+The fitted values and residuals from a model can be obtained using the **augment()** function. In the beer production example in Section 5.2, we saved the fitted models as **beer_fit**. So we can simply apply **augment()** to this object to compute the fitted values and residuals for all models.
+```{r}
+beer_fit %>%
+  augment()
+```
+
+##5.4 Residual diagnostics
+
+A good forecasting method will yield innovation residuals with the following properties:
+
+1.The innovation residuals are uncorrelated. If there are correlations between innovation residuals, then there is information left in the residuals which should be used in computing forecasts.
+2.The innovation residuals have zero mean. If they have a mean other than zero, then the forecasts are biased.
+
+In addition to these essential properties, it is useful (but not necessary) for the residuals to also have the following two properties.
+
+3.The innovation residuals have constant variance. This is known as “homoscedasticity”.
+4.The innovation residuals are normally distributed.
+
+## Example: Google’s daily closing stock price
+We will continue with the Google daily closing stock price example from Section 5.2. For stock market prices and indexes, the best forecasting method is often the naïve method. That is, each forecast is simply equal to the last observed value. Hence, the residuals are simply equal to the difference between consecutive observations
+
+The following graph shows the Google daily closing stock price for trading days during 2015. The large jump corresponds to 17 July 2015 when the price jumped 16% due to unexpectedly strong second quarter results. 
+```{r}
+google_2015 %>%
+  autoplot(Close) +
+  labs(
+    y = "USD",
+    title = "Google daily closing stock prices in 2015"
+  )
+```
+
+The residuals obtained from forecasting this series using the naïve method. The large positive residual is a result of the unexpected price jump in July.
+```{r}
+aug <- google_2015 %>%
+  model(
+    naive = NAIVE(Close)
+  ) %>%
+  augment()
+
+aug %>%
+  autoplot(.innov) +
+    labs(y = "$US",
+       title = "Residuals from the naïve method")
+
+aug %>%
+  ggplot(aes(x = .innov)) +
+  geom_histogram() +
+    labs(title = "Histogram of residuals")
+
+aug %>%
+  ACF(.innov) %>%
+  autoplot() +
+  labs(title = "Residuals from the naïve method")
+
+google_2015 %>%
+  model(naive = NAIVE(Close)) %>%
+  gg_tsresiduals()
+```
+
+## Test for autocorrelation
+
+```{r}
+#Box-Pierce test
+aug %>% features(.innov, box_pierce, lag = 10)
+
+#Ljung-Box test
+aug %>% features(.innov, ljung_box, lag = 10)
+```
+
+## 5.5 Distributional forecasts and prediction intervals
+
+## Benchmark methods
+
+Prediction intervals can easily be computed for you when using the **fable** package. For example, here is the output when using the naïve method for the Google stock price.
+
+The **hilo()** function converts the forecast distributions into intervals. By default, 80% and 95% prediction intervals are returned, although other options are possible via the **level** argument.
+```{r}
+library(fable)
+google_2015 %>%
+  model(
+    naive = NAIVE(Close)
+  ) %>%
+  forecast(h = 10) %>%
+  hilo()
+```
+
+When plotted, the prediction intervals are shown as shaded regions, with the strength of colour indicating the probability associated with the interval. Again, 80% and 95% intervals are shown by default, with other options available via the **level** argument.
+```{r}
+google_2015 %>%
+  model(naive = NAIVE(Close)) %>%
+  forecast(h = 10) %>%
+  autoplot(google_2015) +
+  labs(title="Google daily closing stock price", y="$US" )
+```
+
+## Prediciton intervals from bootstrapped residuals
+
+When a normal distribution for the residuals is an unreasonable assumption, one alternative is to use bootstrapping, which only assumes that the residuals are uncorrelated with constant variance.
+
+Assuming future errors will be similar to past errors, when  
+t>T we can replace et by sampling from the collection of errors we have seen in the past (i.e., the residuals).
+
+Doing this repeatedly, we obtain many possible futures. To see some of them, we can use the **generate()** function.
+```{r}
+fit <- google_2015 %>%
+  model(NAIVE(Close))
+
+sim <- fit %>%
+  generate(h = 30, times = 11, bootstrap = T)
+
+sim
+```
+Here we have generated five possible sample paths for the next 30 trading days. The **.rep** variable provides a new key for the tsibble. The plot below shows the five sample paths along with the historical data.
+```{r}
+google_2015 %>%
+  ggplot(aes(x = day)) +
+  geom_line(aes(y = Close)) +
+  geom_line(aes(y = .sim, colour = as.factor(.rep)), data = sim) +
+  labs(title = "Google daily closing stock price", y = "USD")
+```
+
+Then we can compute prediction intervals by calculating percentiles of the future sample paths for each forecast horizon. The result is called a bootstrapped prediction interval. 
+
+This is all built into the **forecast()** function so you do not need to call **generate()** directly.
+```{r}
+fc = fit %>% forecast(h = 30, bootstrap = T)
+fc
+```
+Notice that the forecast distribution is now represented as a simulation with 5000 sample paths. Because there is no normality assumption, the prediction intervals are not symmetric. The **.mean** column is the mean of the bootstrap samples, so it may be slightly different from the results obtained without a bootstrap.
+```{r}
+fc %>%
+  autoplot(google_2015) +
+  labs(title = "Google daily closing stock price", y = "USD")
+
+
+```
+The number of samples can be controlled using the times argument for forecast(). For example, intervals based on 1000 bootstrap samples can be sampled with
+```{r}
+google_2015 %>%
+  model(naive = NAIVE(Close)) %>%
+  forecast(h = 10, bootstrap = T, times = 1000) %>%
+  hilo()
+```
+
+## 5.6 Prediction intervals with transformations
+
+## 5.7 Forecasing with decomposition
+It is usually assumed that the seasonal component is unchanging, or changing extremely slowly, so it is forecast by simply taking the last year of the estimated component. In other words, a seasonal naïve method is used for the seasonal component.
+
+To forecast the seasonally adjusted component, any non-seasonal forecasting method may be used. For example, the drift method, or Holt’s method (discussed in Chapter 8), or a non-seasonal ARIMA model (discussed in Chapter 9), may be used.
+## Example: Employment in the US retail sector
+```{r}
+data("us_employment")
+us_retail_employment <- us_employment %>%
+  filter(year(Month) >= 1990, Title == "Retail Trade")
+
+dcmp <- us_retail_employment %>%
+  model(STL(Employed ~ trend(window = 7), robust = T)) %>%
+  components() %>%
+  select(-.model)
+
+dcmp %>%
+  model(NAIVE(season_adjust)) %>%
+  forecast() %>%
+  autoplot(dcmp) +
+  labs(
+    y = "Number of people",
+    title = "US retail employment"
+  )
+```
+
+Figure above shows naïve forecasts of the seasonally adjusted US retail employment data. These are then “reseasonalised” by adding in the seasonal naïve forecasts of the seasonal component.
+
+his is made easy with the **decomposition_model()** function, which allows you to compute forecasts via any additive decomposition, using other model functions to forecast each of the decomposition’s components. Seasonal components of the model will be forecast automatically using **SNAIVE()** if a different model isn’t specified. The function will also do the reseasonalising for you, ensuring that the resulting forecasts of the original data are obtained.
+```{r}
+fit_dcmp <- us_retail_employment %>%
+  model(decomposition_model(
+    STL(Employed ~ trend(window = 7), robust = T),
+    NAIVE(season_adjust),
+    SNAIVE(season_year)
+    ))
+
+fit_dcmp %>%
+  forecast() %>%
+  autoplot(us_retail_employment) +
+  labs(y = "Number of people",
+       title = "US retail employment")
+```
+The ACF of the residuals, shown in Figure 5.20, displays significant autocorrelations. These are due to the naïve method not capturing the changing trend in the seasonally adjusted series.
+```{r}
+fit_dcmp %>%
+  gg_tsresiduals()
+```
+

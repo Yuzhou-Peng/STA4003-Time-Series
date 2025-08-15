@@ -1,0 +1,266 @@
+---
+title: "STA4003_Project"
+author: "Yuzhou Peng"
+date: "2023-11-13"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(fpp3)
+library(ggplot2)
+library(fable.prophet)
+```
+
+```{r}
+#Data preparation
+
+
+
+data2014_Csum <- data2014 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x) %>%
+  mutate(race_num = row_number()) %>%
+  mutate(WIN_PROPORTION = WIN_POOL.y/WIN_POOL.x) %>%
+  as_tsibble(index = race_num)
+
+data2015_Csum <- data2015 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x) %>%
+  mutate(race_num = row_number()) %>%
+  as_tsibble(index = race_num)
+
+data2016_Csum <- data2016 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x) %>%
+  mutate(race_num = row_number()) %>%
+  as_tsibble(index = race_num)
+
+data2017_Csum <- data2017 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x) %>%
+  mutate(race_num = row_number()) %>%
+  as_tsibble(index = race_num)
+
+data2014_Csum_first_race <- data2014_Csum %>%
+  filter(WIN_NUMBER.y == 1)
+
+data2014_Csum_first_race <- data2014_Csum_first_race %>%
+  mutate(racing_day = row_number()) %>%
+  as_tsibble(index = racing_day)
+
+data2015_Csum_first_race <- data2015_Csum %>%
+  filter(WIN_NUMBER.y == 1)
+
+data2015_Csum_first_race <- data2015_Csum_first_race %>%
+  mutate(racing_day = row_number()) %>%
+  as_tsibble(index = racing_day)
+
+data2016_Csum_first_race <- data2016_Csum %>%
+  filter(WIN_NUMBER.y == 1)
+
+data2016_Csum_first_race <- data2016_Csum_first_race %>%
+  mutate(racing_day = row_number()) %>%
+  as_tsibble(index = racing_day)
+
+data2017_Csum_first_race <- data2017_Csum %>%
+  filter(WIN_NUMBER.y == 1)
+
+data2017_Csum_first_race <- data2017_Csum_first_race %>%
+  mutate(racing_day = row_number()) %>%
+  as_tsibble(index = racing_day)
+
+data_2014_2017 <- rbind(data2014, data2015, data2016, data2017)
+data_2014_2017 <- data_2014_2017 %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+data_2014_2017_Csum <- data_2014_2017 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x)
+
+data_2014_2017_Csum_first_race <- data_2014_2017_Csum %>%
+  filter(WIN_NUMBER.y == 1) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+data_2014_2018 <- rbind(data2014, data2015, data2016, data2017, data2018)
+data_2014_2018 <- data_2014_2018 %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+data_2014_2018_Csum <- data_2014_2018 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x)
+
+data_2014_2018_Csum_first_race <- data_2014_2018_Csum %>%
+  filter(WIN_NUMBER.y == 1) %>%
+  mutate(time_index = row_number()) %>%
+  as_tsibble(index = time_index)
+
+
+                  
+annual_total_race <- c(rep(nrow(data2014_Csum_first_race), nrow(data2014_Csum_first_race)),
+                       rep(nrow(data2015_Csum_first_race), nrow(data2015_Csum_first_race)),
+                       rep(nrow(data2016_Csum_first_race), nrow(data2016_Csum_first_race)),
+                       rep(nrow(data2017_Csum_first_race), nrow(data2017_Csum_first_race)),
+                       rep(nrow(data2018_Csum_first_race), nrow(data2018_Csum_first_race)))
+
+
+data_2014_2018_Csum_first_race <- data_2014_2018_Csum_first_race %>%
+  mutate(total_race = annual_total_race)
+
+year_label <- c(rep(2014, nrow(data2014_Csum_first_race)),
+                       rep(2015, nrow(data2015_Csum_first_race)),
+                       rep(2016, nrow(data2016_Csum_first_race)),
+                       rep(2016, nrow(data2017_Csum_first_race)),
+                       rep(2017, nrow(data2018_Csum_first_race)))
+
+data_2014_2018_Csum_first_race <- data_2014_2018_Csum_first_race %>%
+  mutate(year = year_label) %>%
+  mutate(popularity = total_race/year)
+
+```
+
+```{r}
+#Linear Regression
+  
+tslm_pool <- data_2014_2018_Csum_first_race %>%
+  filter(time_index <= 80) %>%
+  model(TSLM(Csum ~ WIN_POOL.x )) 
+
+fc_tslm_pool <- tslm_pool %>%
+  forecast(new_data = data_2014_2018_Csum_first_race %>% filter(time_index > 80))
+
+fc_tslm_pool %>%
+  autoplot(data_2014_2018_Csum_first_race)
+
+fc_tslm_pool %>%
+  accuracy(data_2014_2018_Csum_first_race %>% filter(time_index > 280))
+
+tslm_pool_2018 <- data_2014_2018_Csum_first_race %>%
+  filter(time_index <= 135) %>%
+  model(TSLM(Csum ~ WIN_POOL.x )) 
+
+fc_tslm_pool_2018 <- tslm_pool_2018 %>%
+  forecast(new_data = data_2014_2018_Csum_first_race %>% filter(time_index > 280))
+
+
+fc_tslm_pool_2018 %>%
+  autoplot(data_2014_2018_Csum_first_race)
+
+fc_tslm_pool_2018 %>%
+  accuracy(data_2014_2018_Csum_first_race %>% filter(time_index > 280))
+```
+
+
+
+```{r}
+#Plots
+data2014_Csum %>%
+  ggplot(aes(x = WIN_ODDS_1.x, y = WIN_ODDS_1.y)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data2014_Csum %>%
+  model(TSLM(WIN_ODDS_1.y ~ WIN_ODDS_1.x)) %>%
+  report()
+
+
+data2015_Csum %>%
+  ggplot(aes(x = WIN_ODDS_1.x, y = WIN_ODDS_1.y)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data2015_Csum %>%
+  model(TSLM(WIN_ODDS_1.y ~ WIN_ODDS_1.x)) %>%
+  report()
+
+data2016_Csum %>%
+  ggplot(aes(x = WIN_ODDS_1.x, y = WIN_ODDS_1.y)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data2016_Csum %>%
+  model(TSLM(WIN_ODDS_1.y ~ WIN_ODDS_1.x)) %>%
+  report()
+
+data2017_Csum %>%
+  ggplot(aes(x = WIN_ODDS_1.x, y = WIN_ODDS_1.y)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data2017_Csum %>%
+  model(TSLM(WIN_ODDS_1.y ~ WIN_ODDS_1.x)) %>%
+  report()
+
+data2018 %>%
+  ggplot(aes(x = WIN_ODDS_1.x, y = WIN_ODDS_1.y)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data2014_Csum %>%
+  ggplot(aes(x = -log(WIN_ODDS_1.x), y = log(C1))) +
+  geom_smooth(method = "lm") +
+  geom_point()
+```
+
+
+```{r}
+#Fitting ARIMA model to Csum
+data2014_Csum_first_race %>%
+  filter(racing_day <= 30) %>%
+  model(ARIMA(Csum)) %>%
+  forecast(h = 10) %>%
+  accuracy(data2014_Csum_first_race)
+
+  
+data2018_Csum_first_race <- data2018 %>%
+  mutate(Csum = WIN_POOL.y - WIN_POOL.x) %>%
+  filter(WIN_NUMBER.y == 1) %>%
+  mutate(racing_day = row_number()) %>%
+  as_tsibble(index = racing_day)
+
+
+```
+
+```{r}
+#Fitting decomposition and regression model
+ 
+```
+
+```{r}
+# Bootstrap Agragating
+bagged <- data2014_Csum %>%
+  filter(race_num <= 300) %>%
+  model(STL(Csum ~ season(period = 10) + season(period = 5))) %>%
+  generate(new_data = data2014_Csum, times = 10, bootstrap_block_size = 8) %>%
+  select(-.model, -Csum) %>%
+  model(ets = ETS(.sim)) %>%
+  forecast(h = 12) %>%
+  summarise(bagged_mean = mean(.mean))
+
+data2014_Csum %>%
+  filter(race_num <= 300) %>%
+  model(ETS(Csum)) %>%
+  forecast(h = 12) %>%
+  autoplot(data2014_Csum) +
+  autolayer(bagged, bagged_mean, col = "red")
+```
+
+```{r}
+#VAR
+fit_var <- data_2014_2017_Csum_first_race %>%
+  filter(time_index <= 80) %>%
+  model(
+    var = VAR(vars(Csum, WIN_POOL.x))
+  )
+
+fit_var %>%
+  forecast(h = 2) %>%
+  accuracy(data_2014_2017_Csum_first_race)
+
+fit_var_2018 <- data_2014_2018_Csum_first_race %>%
+  filter(time_index <= 330 & time_index >= 280) %>%
+  model(
+    var = VAR(vars(Csum, WIN_POOL.x))
+  )
+
+fit_var_2018 %>%
+  forecast(h = 23) %>%
+  accuracy(data_2014_2018_Csum_first_race)
+```

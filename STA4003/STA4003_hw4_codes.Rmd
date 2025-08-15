@@ -1,0 +1,22 @@
+---
+title: "STA4003_HW3_codes"
+author: "Yuzhou Peng"
+date: "2023-11-22"
+output: html_document
+---
+
+```{r}
+ACF = ARMAacf(ar=c(-1.6,-0.64), ma=0, lag.max = 20)
+plot(ACF, type="h", xlab="lag")
+abline(h=0)
+```
+```{r}
+ACF = ARMAacf(ar=c(0.4,0.45), ma=0, lag.max = 20)
+plot(ACF, type="h", xlab="lag")
+abline(h=0)
+```
+```{r}
+ACF = ARMAacf(ar=c(1.2,-0.85), ma=0, lag.max = 20)
+plot(ACF, type="h", xlab="lag")
+abline(h=0)
+```

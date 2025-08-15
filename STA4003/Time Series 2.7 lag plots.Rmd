@@ -1,0 +1,37 @@
+---
+title: "Time Series 2.7 lag plots and 2.8 autocrrelation"
+author: "Yuzhou Peng"
+date: "2023-09-11"
+output: html_document
+---
+
+##2.7 Lag plots
+```{r}
+data("aus_production")
+recent_production <- aus_production %>%
+  filter(year(Quarter) >= 2000)
+
+recent_production %>%
+  gg_lag(Beer, geom = "point") +
+  labs(x = "lag(Beer, k)")
+```
+
+Here the colours indicate the quarter of the variable on the vertical axis. The relationship is strongly positive at lags 4 and 8, reflecting the strong seasonality in the data. The negative relationship seen for lags 2 and 6 occurs because peaks (in Q4) are plotted against troughs (in Q2)
+
+##2.8 Autocorrelation
+Just as correlation measures the extent of a linear relationship between two variables, autocorrelation measures the linear relationship between lagged values of a time series.
+
+The autocorrelation coefficients for the beer production data can be computed using the ACF() function.
+
+```{r}
+recent_production %>% ACF(Beer, lag_max = 9)
+```
+We usually plot the ACF to see how the correlations change with the lag k. The plot is sometimes known as a correlogram.
+```{r}
+recent_production %>%
+  ACF(Beer) %>%
+  autoplot() + labs(title = "Australian beer production")
+```
+When data have a trend, the autocorrelations for small lags tend to be large and positive because observations nearby in time are also nearby in value. So the ACF of a trended time series tends to have positive values that slowly decrease as the lags increase.
+
+When data are seasonal, the autocorrelations will be larger for the seasonal lags (at multiples of the seasonal period) than for other lags.

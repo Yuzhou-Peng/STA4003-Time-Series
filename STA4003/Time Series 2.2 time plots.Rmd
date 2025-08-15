@@ -1,0 +1,26 @@
+---
+title: "Time Series 2.2 time plots"
+author: "Yuzhou Peng"
+date: "2023-09-07"
+output: html_document
+---
+
+**autoplot() + labs()**
+```{r}
+data("ansett")
+melsyd_economy <- ansett
+melsyd_economy %>%
+  filter(Airports == "MEL-SYD",
+         Class == "Economy") %>%
+  mutate(Passengers = Passengers/1000) %>%
+  autoplot(Passengers) + 
+  labs(title = "Ansett airlines economy class",
+       subtitle = "Melbourne-Sydney",
+       y = "Passengers ('000)")
+```
+
+```{r}
+autoplot(a10, Cost) + 
+  labs(title = "Australian antidiabetic drug sales",
+       y = "$ (millions)")
+```

@@ -1,0 +1,118 @@
+---
+title: 'Time Series 2.1: tsibble object'
+author: "Yuzhou Peng"
+date: "2023-09-06"
+output: html_document
+---
+
+## tsibble object
+
+```{r}
+library(fpp3)
+```
+
+## The index variable
+
+```{r}
+y <- tsibble(
+  Year = 2015:2019,
+  Observation = c(123, 39, 78, 52, 110),
+  index = Year
+)
+#the name of object measuring time and observation can be arbitrary.
+typeof(y)
+y[1]
+y[[1]]
+y[[1]][1]
+y[1][1]
+y[1][1][1]
+y[2]
+names(y[2])
+```
+
+For observations that are more frequent than once per year, we need to use a time class function on the index. For example, suppose we have a monthly dataset z.
+
+First, the Month column is being converted from text to a monthly time object with **yearmonth()**. We then convert the data frame to a tsibble by identifying the index variable using **as_tsibble()**. Note the addition of “[1M]” on the first line indicating this is monthly data.
+
+```{r}
+z = tibble(
+  Month = c("2019 Jan", "2019 Feb", "2019 Mar", "2019 Apr", "2019 May"),
+  Observation = c(50, 23, 34, 30, 25)
+)
+# convert z into tsibble object
+z.tsibble = z %>%
+  mutate(Month = yearmonth(Month)) %>%
+  as_tsibble(index = Month)
+```
+Other time class functions can be used depending on the frequency of the observations.
+
+Annual--start:end
+Quarterly--**yearquarter()**
+Monthl--**yearmonth()**
+Weekly--**yearweek()**
+Daily--**as_date()**, **ymd()**
+Sub-daily--**as_datetime()**, **ymd_hms()**
+
+## The key variables
+
+A tsibble also allows multiple time series to be stored in a single object. Suppose you are interested in a dataset containing the fastest running times for women’s and men’s track races at the Olympics, from 100m to 10000m:
+```{r}
+data("olympic_running")
+```
+The summary above shows that this is a tsibble object, which contains 312 rows and 4 columns. Alongside this, “[4Y]” informs us that the interval of these observations is every four years. Below this is the key structure, which informs us that there are 14 separate time series in the tsibble. A preview of the first 10 observations is also shown, in which we can see a missing value occurs in 1916. This is because the Olympics were not held during World War I.
+
+The 14 time series in this object are uniquely identified by the keys: the **Length** and **Sex** variables. The **distinct()** function can be used to show the categories of each variable or even combinations of variables:
+```{r}
+distinct(olympic_running, Sex)
+distinct(olympic_running, Length)
+```
+
+## Working with tsibble objects
+
+We can use **dplyr** functions such as **mutate()**, **filter()**, **select()** and **summarise()** to work with tsibble objects. To illustrate these, we will use the PBS tsibble containing sales data on pharmaceutical products in Australia.
+```{r}
+data("PBS")
+print(PBS)
+```
+
+```{r}
+filter(PBS, ATC2 == "A10")
+```
+
+Next we can simplify the resulting object by selecting the columns we will need in subsequent analysis.
+```{r}
+PBS %>%
+  filter(ATC2 == "A10") %>%
+  select(Month, Concession, Type, Cost)
+```
+Note that the index variable Month, and the keys Concession and Type, would be returned even if they were not explicitly selected as they are required for a tsibble (to ensure each row contains a unique combination of keys and index).
+
+Another useful function is **summarise()** which allows us to combine data across keys. For example, we may wish to compute total cost per month regardless of the Concession or Type keys.
+```{r}
+PBS %>%
+  filter(ATC2 == "A10") %>%
+  select(Month, Concession, Type, Cost) %>%
+  summarise(TotalC = sum(Cost))
+```
+
+We can create new variables using the **mutate()** function. Here we change the units from dollars to millions of dollars:
+```{r}
+PBS |>
+  filter(ATC2 == "A10") |>
+  select(Month, Concession, Type, Cost) |>
+  summarise(TotalC = sum(Cost)) |>
+  mutate(Cost = TotalC/1e6) -> a10 
+```
+
+## Read a CSV file and convert to a tsibble
+
+```{r}
+prison <- readr::read_csv("https://OTexts.com/fpp3/extrafiles/prison_population.csv")
+prison.ts <- prison %>%
+  mutate(Quater = yearquarter(Date)) %>%
+  select(-Date) %>%
+  as_tsibble(key = c(State, Gender, Legal, Indigenous),
+             index = Quater)
+```
+
+## The seasonal period

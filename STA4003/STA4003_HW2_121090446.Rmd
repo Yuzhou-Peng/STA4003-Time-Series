@@ -1,0 +1,370 @@
+---
+title: "STA4003_HW2"
+author: "Yuzhou Peng"
+date: "2023-10-19"
+output: html_document
+---
+
+```{r}
+library(fpp3)
+library(dplyr)
+library(feasts)
+library(fable)
+library(broom)
+```
+
+## 4.6.1
+Write a function to compute the mean and standard deviation of a time series, and apply it to the *PBS* data. Plot the series with the highest mean, and the series with the lowest standard deviation.
+```{r}
+data("PBS")
+mean_std <- function(x){
+  c(
+    Mean = mean(x, na.rm = T),
+    Std = sd(x, na.rm = T)
+  )
+}
+
+pbs_feature <- PBS %>%
+  features(Cost, mean_std)
+
+pbs_feature
+
+pbs_feature %>%
+  filter(Mean == max(Mean))
+
+PBS %>% 
+  filter(Concession == "Concessional",
+         Type == "Co-payments",
+         ATC1 == "C",
+         ATC2 == "C10") %>% 
+  autoplot(Cost)
+
+pbs_feature %>%
+  filter(Std == min(Std))
+
+PBS %>%
+  filter(
+    Concession == "General",
+    Type == "Co-payments",
+    ATC1 == "R",
+    ATC2 == "R"
+  ) %>%
+  autoplot(Cost)
+
+PBS %>%
+  filter(
+    Concession == "General",
+    Type == "Co-payments",
+    ATC1 == "S",
+    ATC2 == "S"
+  ) %>%
+  autoplot(Cost)
+```
+
+## 4.6.3
+Use a feature-based approach to look for outlying series in the PBS data. What is unusual about the series you identify as “outliers”.
+```{r}
+PBS_feast <- PBS %>%
+  features(Cost, feature_set(pkgs = "feasts"))
+
+PBS_feast <- PBS_feast[,-30]
+
+PBS_feast <- PBS_feast %>%
+  na.omit()
+
+PBS_pc <- PBS_feast %>%
+  select(-Concession, -Type, -ATC1, -ATC2) %>%
+  prcomp(scale = T) %>%
+  augment(PBS_feast)
+
+p1 <- PBS_pc %>% 
+   unite("serie", Concession:ATC2, sep = "-", remove = FALSE) %>% 
+  ggplot(aes(x = .fittedPC1, y = .fittedPC2, label = serie)) +
+  geom_point()
+
+p1
+
+outliers <- PBS_pc %>%
+  filter(.fittedPC2 < -10)
+outliers %>%
+  select(ATC1, ATC2, Type, Concession)
+
+
+PBS %>%
+  filter(
+    Concession == "Concessional",
+    Type == "Safety net",
+    ATC1 == "J",
+    ATC2 == "J06"
+  ) %>%
+  autoplot(Cost)
+
+PBS %>%
+  filter(
+    Concession == "General",
+    Type == "Co-payments",
+    ATC1 == "C",
+    ATC2 == "C05"
+  ) %>%
+  autoplot(Cost)
+
+PBS %>%
+  filter(
+    Concession == "General",
+    Type == "Co-payments",
+    ATC1 == "S",
+    ATC2 == "S02"
+  ) %>%
+  autoplot(Cost)
+
+PBS %>%
+  filter(
+    Concession == "General",
+    Type == "Co-payments",
+    ATC1 == "S",
+    ATC2 == "S03"
+  ) %>%
+  autoplot(Cost)
+```
+The recorded times payment is extremely low
+
+##  5.11.6
+
+$\text{a. False. Forcasting by bootstrap method generally does not have normally distributed residuals}$
+$\text{b. False. It is possible that a model with small residuals is a over-fitting model.}$
+$\text{c. False. Measuring accuracy by MAPE has bas performance when the series have a number of meaningful zero values}$
+$\text{d. False. More complicated model does not suggest more accuracy. Reasons for bad performance could be wrong selction of variable or assumption.}$
+$\text{e. False. If the test set has only a single observation, or a very small number of observations, then test result is not reliable.}$
+
+## 5.11.9
+a. Create a training set for household wealth (*hh_budget*) by withholding the last four years as a test set.
+```{r}
+data("hh_budget")
+hh_training <- hh_budget %>%
+  filter(Year <= 2012)
+
+hh_testing <- hh_budget %>%
+  filter(Year > 2012)
+```
+
+b. Fit all the appropriate benchmark methods to the training set and forecast the periods covered by the test set.
+```{r}
+hh_fit <- hh_training %>%
+  model(
+    mean = MEAN(Wealth),
+    naive = NAIVE(Wealth),
+    drift = NAIVE(Wealth ~ drift())
+  )
+
+
+hh_fc <- hh_fit %>%
+  forecast(h = 4)
+```
+
+c. Compute the accuracy of your forecasts. Which method does best?
+```{r}
+accuracy(hh_fc, hh_testing)
+```
+$\text{According to the results, drifting method has the best performance.}$
+
+d.Do the residuals from the best method resemble white noise?
+```{r}
+aug <- hh_training %>%
+  model(NAIVE(Wealth ~ drift())) %>%
+  augment()
+
+res_aus <- aug %>%
+  filter(Country == "Australia") %>%
+  select(.innov)
+
+res_ca <- aug %>%
+  filter(Country == "Canada") %>%
+  select(.innov)
+
+res_jp <- aug %>%
+  filter(Country == "Japan") %>%
+  select(.innov)
+
+res_us <- aug %>%
+  filter(Country == "USA") %>%
+  select(.innov)
+
+res_aus %>% ACF() %>%
+  autoplot() +
+  labs(title = "AFC plot of residuals from Australia")
+
+res_ca %>% ACF() %>%
+  autoplot() +
+  labs(title = "AFC plot of residuals from Canada")
+
+res_jp %>% ACF() %>%
+  autoplot() +
+  labs(title = "AFC plot of residuals from Japan")
+
+res_us %>% ACF() %>%
+  autoplot() +
+  labs(title = "AFC plot of residuals from USA")
+
+
+```
+$\text{According to ACF plots of residuals of modeling from the 4 countries, residuals of Australia and Japan behave similarly to white noise.}$
+
+$\text{Although the acf values of residuals of Canada and the US are within the threshold, we observe some seasonal patterns.}$
+
+$\text{So whether they are truely white noise require more data}$
+
+## 5.11.12
+*tourism* contains quarterly visitor nights (in thousands) from 1998 to 2017 for 76 regions of Australia.
+```{r}
+data("tourism")
+```
+
+a. Extract data from the Gold Coast region using *filter()* and aggregate total overnight trips (sum over *Purpose*) using *summarise()*. Call this new dataset gc_tourism.
+```{r}
+tourism <- as_tibble(tourism)
+gc_tourism <- tourism %>%
+  filter(Region == "Gold Coast") %>%
+  group_by(Quarter) %>%
+  summarise(Trips = sum(Trips)) %>%
+  as_tsibble(index = Quarter)
+```
+
+b. Using slice() or filter(), create three training sets for this data excluding the last 1, 2 and 3 years. For example, gc_train_1 <- gc_tourism |> slice(1:(n()-4)).
+```{r}
+gc_train_1 <- gc_tourism %>%
+  filter_index("1998 Q1" ~ "2016 Q4")
+
+gc_train_2 <- gc_tourism %>%
+  filter_index("1998 Q1" ~ "2015 Q4")
+
+gc_train_3 <- gc_tourism %>%
+  filter_index("1998 Q1" ~ "2014 Q4")
+```
+
+c. Compute one year of forecasts for each training set using the seasonal naïve (SNAIVE()) method. Call these gc_fc_1, gc_fc_2 and gc_fc_3, respectively.
+```{r}
+gc_fc_1 <- gc_train_1 %>%
+  model(snaive = SNAIVE(Trips)) %>%
+  forecast(h = 4)
+
+gc_fc_2 <- gc_train_2 %>%
+  model(snaive = SNAIVE(Trips)) %>%
+  forecast(h = 4)
+
+gc_fc_3 <- gc_train_3 %>%
+  model(snaive = SNAIVE(Trips)) %>%
+  forecast(h = 4)
+```
+
+d. Use accuracy() to compare the test set forecast accuracy using MAPE. Comment on these.
+```{r}
+accur_MAPE_1 <- gc_fc_1 %>%
+  accuracy(gc_tourism)
+
+accur_MAPE_2 <- gc_fc_2 %>%
+  accuracy(gc_train_1) 
+
+accur_MAPE_3 <- gc_fc_3 %>%
+  accuracy(gc_train_2) 
+
+accur_MAPE_1$MAPE
+accur_MAPE_2$MAPE
+accur_MAPE_3$MAPE
+```
+$\text{The the forecast of the second dataset is more accurate than the others. The model gennerally gives accurate results.}$
+
+## 7.10.4
+The data set *souvenirs* concerns the monthly sales figures of a shop which opened in January 1987 and sells gifts, souvenirs, and novelties. The shop is situated on the wharf at a beach resort town in Queensland, Australia. The sales volume varies with the seasonal population of tourists. There is a large influx of visitors to the town at Christmas and for the local surfing festival, held every March since 1988. Over time, the shop has expanded its premises, range of products, and staff
+```{r}
+data("souvenirs")
+```
+
+a.Produce a time plot of the data and describe the patterns in the graph. Identify any unusual or unexpected fluctuations in the time series.
+```{r}
+souvenirs %>%
+  autoplot() +
+  labs(title = "Souvenirs sales")
+```
+$\text{There is unexpected inceasing right after the end of each year. This might be due to the surfing festival.}$
+
+b.Explain why it is necessary to take logarithms of these data before fitting a model.
+$\text{The data shows a variation that inceases with the level of the series. Logarithmic transformation works well in interpreting this multiplicative trend.}$
+
+c.Fit a regression model to the logarithms of these sales data with a linear trend, seasonal dummies and a “surfing festival” dummy variable.
+```{r}
+souvenirs_log <- souvenirs %>%
+  mutate(log_sales = log(Sales))
+
+d_festival <- rep(0, nrow(souvenirs_log))
+d_festival[seq_along(d_festival)%%12 == 3] <- 1
+d_festival[3] <- 0
+
+souvenirs_log$Dummy <- d_festival
+
+souvenirs_fit <- souvenirs_log %>%
+  model(TSLM(log(Sales) ~ trend() + season() + Dummy))
+
+augment(souvenirs_fit)
+
+augment(souvenirs_fit) %>%
+  autoplot(.fitted)
+```
+
+d. Plot the residuals against time and against the fitted values. Do these plots reveal any problems with the model?
+```{r}
+augment(souvenirs_fit) %>%
+  autoplot(.innov)
+
+augment(souvenirs_fit) %>%
+  ggplot(aes(x = .fitted, y = .innov)) +
+  labs(y = "Residuals", x = "Fitted values") +
+  geom_point()
+```
+$\text{The plot of residuals vs. time indicates that there is still some pattern in the residuals.}$ 
+
+
+e. Do boxplots of the residuals for each month. Does this reveal any problems with the model?
+```{r}
+augment(souvenirs_fit) %>%
+  mutate(month = month(Month, label = T)) %>%
+   ggplot(aes(x = month, y = .innov)) +
+   geom_boxplot()
+```
+$\text{The boxplot shows largely different variation among different months.}$
+
+f. What do the values of the coefficients tell you about each variable?
+```{r}
+report(souvenirs_fit)
+```
+*trend()* coefficient suggests that with every month sales increases on average by 2.2%.
+
+*season()year2* coefficient shows that February log sales are greater than January on average by 25.1%, after allowing for the trend.(All the season() coefficients can be interpreted in the same way.)
+
+*Dummy* coefficient shows that for months that include the surfing festival, log sales increases on average by 50.1% compared to months without the festival, after allowing for the trend and seasonality.
+
+g.What does the Ljung-Box test tell you about your model?
+```{r}
+augment(souvenirs_fit) %>%
+  features(.innov, ljung_box, dof = 14, lag = 24)
+```
+$\text{The test indicates that the residuals are still correlated.}$
+
+h. Regardless of your answers to the above questions, use your regression model to predict the monthly sales for 1994, 1995, and 1996. Produce prediction intervals for each of your forecasts.
+```{r}
+d_festival_future <- rep(0, 36)
+d_festival[seq_along(d_festival)%%12 == 3] <- 1
+d_festival[3] <- 0
+
+souvenirs_future <- new_data(souvenirs, n = 36) %>%
+  mutate(Dummy = d_festival_future)
+
+souvenirs_fit %>%
+  forecast(new_data = souvenirs_future) %>%
+  autoplot(souvenirs)
+```
+
+i.How could you improve these predictions by modifying the model?
+The model can be improved by taking into account nonlinearity of the trend.
+
+$\text{The model assumed linearity in the trend. However this assumption may not be true according to time plot.}$
+$\text{To improve the model, one way can be applying nonlinear methods, instead of linear ones.}$
